@@ -19,6 +19,10 @@ The previews load Cabinet Grotesk and General Sans from the Fontshare CDN becaus
 - [`reviews/design-review-2026-09-25.md`](reviews/design-review-2026-09-25.md) is the /plan-design-review report: 7 passes, 23 decisions.
 - `reviews/tasks-*.jsonl` are the implementation task lists from each review.
 
+## Specs
+
+- [`specs/m1-foundation.md`](specs/m1-foundation.md) is the backlog-ready spec for the first M1 build issue (eng T1 + T15 + design T11): the `backend/` and `apps/web` scaffold, Postgres 17, SQL migrations, CI, and a Supabase staging project with the Data API closed. Written with /spec; passed the Codex quality gate at 7/10.
+
 ## Order of authority
 
 1. `DESIGN.md` for anything visual.
