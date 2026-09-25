@@ -117,8 +117,8 @@ The app never creates tables in `public`. The `pg_roles` guard lets the same fil
 
 **Web (`apps/web`)**
 - Vite + React 19 + TypeScript `strict`. Dev server proxies `/api` to `http://localhost:8000` (R27).
-- Scripts: `dev`, `build`, `preview`, `test` (Vitest, jsdom), `lint` (ESLint), `typecheck` (`tsc --noEmit`), `format:check` (Prettier).
-- i18n with FormatJS: `react-intl`; `src/i18n/es-CO.json` holds ICU messages; `IntlProvider.tsx` wraps the app with `locale="es-CO"`. ESLint: `typescript-eslint`, `eslint-plugin-react`'s `react/jsx-no-literals` (error, `noStrings: true`, `ignoreProps: false`, allow list empty) and `eslint-plugin-formatjs` (recommended config). Tests and config files are exempt.
+- Scripts: `dev`, `build`, `preview`, `test` (Vitest, jsdom), `lint` (`eslint . --max-warnings=0`), `typecheck` (`tsc --noEmit`), `format:check` (Prettier).
+- i18n with FormatJS: `react-intl`; `src/i18n/es-CO.json` holds ICU messages; `IntlProvider.tsx` wraps the app with `locale="es-CO"`. ESLint: `typescript-eslint`, `eslint-plugin-react`'s `react/jsx-no-literals` (error, `noStrings: true`, `ignoreProps: false`, allow list empty, and `elementOverrides: { FormattedMessage: { ignoreProps: true } }` so only the catalog component takes literal props; a literal `aria-label` fails) and `eslint-plugin-formatjs` (recommended config). Tests and config files are exempt.
 - `src/i18n/format.ts`, locale-parameterized, all `Intl`-based:
   - Both money formatters take an amount in **pesos** (the API's raw value), round half away from zero, and throw on negative, `NaN` or non-finite input. Neither handles a missing value; "sin valor reportado" belongs to T19.
   - `formatCOP(value: number)`: below 1.000 millones, whole pesos → `COP 450.000.000`; at or above 1.000 millones, whole millones → `COP 32.000 millones`. `formatCOP(0)` = `COP 0` (R43). `formatCOP(1_234.6)` = `COP 1.235`. `formatCOP(1_234_567_890_123)` = `COP 1.234.568 millones`. Never "M".
@@ -154,20 +154,18 @@ Concurrency group per ref cancels superseded runs; `migrate-staging` uses a sing
 - P3: `has_schema_privilege('anon', 'ftm', 'USAGE')` and the same for `authenticated` are both false.
 - P4: connected as the migration role (the `DATABASE_URL` user, `postgres` locally, in CI and on Supabase; the test asserts `current_user` matches), the test creates a scratch table in `ftm` inside a rolled-back transaction; P1 still holds for it. `ALTER DEFAULT PRIVILEGES` only covers objects created by the role that ran it, so all app tables are created by migrations under this same role.
 
-**Supabase probe (`backend/tests/test_supabase_probe.py`, marker `supabase_probe`, staging only)**. Every request sends `apikey` and `Authorization: Bearer` set to the publishable key. **Any 2xx response fails the probe**, whatever its body, and any 5xx or network error makes it error rather than pass.
+**Supabase probe (`backend/tests/test_supabase_probe.py`, marker `supabase_probe`, staging only)**. Every request sends `apikey` and `Authorization: Bearer` set to the publishable key. Responses were recorded on staging on 2026-09-25 (table in `infra/supabase/README.md`): with the Data API **disabled**, every endpoint answers `503` with code `PGRST002`; **enabled**, an unknown table answers `404 PGRST205` and `Accept-Profile: ftm` answers `406 PGRST106`. The `/rest/v1/` root answers 401 to any non-secret key in both states, so it is not checked. An enabled API also answers `503 PGRST002` for under 30 s while it restarts after a toggle, so one sample cannot prove the disabled state.
 0. Sanity: `GET {SUPABASE_URL}/auth/v1/settings` returns 200. This proves the URL and publishable key are valid and the project is up; if it fails, the probe **errors** (red), it never passes.
-1. `GET {SUPABASE_URL}/rest/v1/` (the Data API root) returns exactly `DATA_API_DISABLED_STATUS`, a constant in the test file. The maintainer records it once from the real response after disabling the Data API (step below) and notes it in `infra/supabase/README.md`. This proves the Data API is off, independent of which tables exist.
-2. For every table in `ftm` (listed via `DATABASE_URL`; never empty because `ftm.schema_migrations` always exists), `GET {SUPABASE_URL}/rest/v1/{table}` with `Accept-Profile: ftm` returns non-2xx.
-3. The same requests without `Accept-Profile` (the `public` path) return non-2xx.
-4. P1, P2 and P3 above, run against staging over `DATABASE_URL`.
+1. Data API disabled: 3 samples, 20 s apart. Each sample requests an unknown table, `/graphql/v1`, and every `ftm` table (listed via `DATABASE_URL`; never empty because `ftm.schema_migrations` always exists) both with `Accept-Profile: ftm` and without it. Every response must be exactly `DATA_API_DISABLED_STATUS = 503` with `DATA_API_DISABLED_CODE = "PGRST002"`. Any 2xx fails; any enabled-state code (`PGRST205`, `PGRST106`, `PGRST202`) fails with "the Data API is enabled"; any other status or code **errors** (outage or platform change), never passes.
+2. P1, P2 and P3 above, run against staging over `DATABASE_URL`.
 
 **Supabase staging project (maintainer step, documented in `infra/supabase/README.md`)**
 - Name `cabosueltos-staging`, region `sa-east-1` (São Paulo), Postgres 17, Free tier (the R20 ops gate decides the paid plan later).
-- Data API: **disabled**. `ftm` is never added to exposed schemas.
+- Data API: **disabled** at Integrations → Data API → Overview → "Enable Data API" off (not under Project Settings). `ftm` is never added to exposed schemas.
 - The maintainer creates the GitHub Environment `staging` (no reviewers, deployment branch `main` only) and sets its three secrets.
-- After disabling the Data API, the maintainer runs `curl -s -o /dev/null -w '%{http_code}' -H "apikey: <publishable key>" <SUPABASE_URL>/rest/v1/` and writes the status into `DATA_API_DISABLED_STATUS` and the README.
-- Right after creating the project, the maintainer runs `DATABASE_URL=<staging direct URL> uv run cabosueltos db migrate` once from `backend/`, then triggers the workflow manually to confirm `migrate-staging` and `supabase-probe` pass.
-- GitHub Environment `staging` secrets: `STAGING_DATABASE_URL` (direct, port 5432), `STAGING_SUPABASE_URL`, `STAGING_SUPABASE_PUBLISHABLE_KEY`. Nothing else from Supabase is stored.
+- Connection: the **Session pooler** URL (Dashboard → Connect → Session pooler; port 5432, user `postgres.<project-ref>`). The direct host `db.<project-ref>.supabase.co` is IPv6-only and GitHub-hosted runners have no IPv6. Session mode keeps the migration runner's advisory lock working; the transaction pooler (6543) is never used.
+- Right after creating the project, the maintainer puts `APP_ENV=staging`, `DATABASE_URL`, `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in a gitignored `.env.staging` at the repo root, runs `uv run --env-file ../.env.staging cabosueltos db migrate` once from `backend/`, then triggers the workflow manually to confirm `migrate-staging` and `supabase-probe` pass.
+- GitHub Environment `staging` secrets: `STAGING_DATABASE_URL` (Session pooler, port 5432), `STAGING_SUPABASE_URL`, `STAGING_SUPABASE_PUBLISHABLE_KEY`. Nothing else from Supabase is stored.
 - Production project: not created here; created at the M1 launch gate.
 
 ## Acceptance Criteria
@@ -183,7 +181,7 @@ Concurrency group per ref cancels superseded runs; `migrate-staging` uses a sing
 9. A JSX file containing `<p>Hola</p>` fails `bun run lint`; the same text through `<FormattedMessage id="…" />` passes.
 10. Every example listed under `format.ts` above holds as a unit test, plus `formatFecha("2024-03-07")` = `07-03-2024`; negative input to either money formatter throws. No formatter output contains a standalone "M".
 11. The PR's CI run has `backend` (including P1-P4) and `web` green, with no job reading a secret; after merge, `migrate-staging` then `supabase-probe` are green on `main`.
-12. All four probe checks pass against staging. Two negative checks are done once by hand and then reverted: turning the Data API on makes probe check 1 fail; granting `SELECT` on `ftm.schema_migrations` to `anon` makes probe check 4 fail.
+12. All three probe tests pass against staging. Two negative checks are done once by hand and then reverted: turning the Data API on makes probe check 1 fail (endpoints answer `404 PGRST205` / `406 PGRST106`); granting `SELECT` on `ftm.schema_migrations` to `anon` makes the P1 count in probe check 2 non-zero.
 13. `git ls-files` contains no `.env` (except `.env.example`), no font files, and no data files.
 14. The first test plan's "Postgres 16" line carries a note pointing to R23.
 
@@ -196,7 +194,7 @@ Concurrency group per ref cancels superseded runs; `migrate-staging` uses a sing
 | Integration (py, real Postgres 17) | migrate applies once; idempotent rerun; checksum mismatch exits 1; concurrent runs; failed file rolls back; `pg_trgm` present | +6 |
 | Integration (py, privileges) | P1-P4 | +4 |
 | Integration (py) | `/api/salud` 200 and 503; `/` serves `index.html`; missing dist → 404 and app still starts | +4 |
-| Probe (py, staging) | The four checks above | +4 |
+| Probe (py, staging) | Sanity, disabled Data API (3 samples), privileges | +3 |
 | Unit (web) | `formatCOP` (each listed example, exactly 1.000 millones, negative and `NaN` throw), `formatMillonesCOP` (each listed example, `< 1` boundary at 499.999 and 500.000), `formatFecha` (valid, invalid) | +14 |
 | Component (web) | `App` renders the catalog title inside `<main>` | +1 |
 | Lint fixture (web) | Literal JSX string fails ESLint | +1 |

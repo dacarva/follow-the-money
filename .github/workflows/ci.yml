@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_ENV: ci
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-throwaway-password
+          POSTGRES_DB: cabosueltos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cabosueltos"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:ci-throwaway-password@localhost:5432/cabosueltos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: uv sync
+        working-directory: backend
+        run: uv sync --frozen
+      - name: ruff check
+        working-directory: backend
+        run: uv run ruff check .
+      - name: ruff format --check
+        working-directory: backend
+        run: uv run ruff format --check .
+      - name: mypy --strict
+        working-directory: backend
+        run: uv run mypy --strict cabosueltos
+      - name: seed emulated Supabase roles
+        run: psql "$DATABASE_URL" -f infra/postgres/init/00_supabase_roles.sql
+      - name: cabosueltos db migrate
+        working-directory: backend
+        run: uv run cabosueltos db migrate
+      - name: pytest
+        working-directory: backend
+        run: uv run pytest -m "not supabase_probe"
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: reject non-bun JS lockfiles
+        working-directory: .
+        run: |
+          if find . -name package-lock.json -o -name pnpm-lock.yaml -o -name yarn.lock \
+              | grep -v node_modules | grep -q .; then
+            echo "Only bun.lock is allowed; found a foreign JS lockfile." >&2
+            exit 1
+          fi
+      - name: bun install
+        run: bun install --frozen-lockfile
+      - name: lint
+        run: bun run lint
+      - name: format:check
+        run: bun run format:check
+      - name: typecheck
+        run: bun run typecheck
+      - name: test
+        run: bun run test
+      - name: build
+        run: bun run build
+
+  migrate-staging:
+    needs: backend
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    environment: staging
+    concurrency:
+      group: migrate-staging
+      cancel-in-progress: false
+    env:
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: uv sync
+        working-directory: backend
+        run: uv sync --frozen
+      - name: cabosueltos db migrate
+        working-directory: backend
+        run: uv run cabosueltos db migrate
+
+  supabase-probe:
+    needs: migrate-staging
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+      SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.STAGING_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: uv sync
+        working-directory: backend
+        run: uv sync --frozen
+      - name: pytest supabase probe
+        working-directory: backend
+        run: uv run pytest -m supabase_probe
