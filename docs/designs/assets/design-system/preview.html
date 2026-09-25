@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cabos Sueltos · sistema de diseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B1322; --surface:#111C30; --raised:#182640; --hairline:#26375A;
+  --text:#EFEBE0; --text-2:#AEB6C6; --meta:#9AA4B8;
+  --mark:#F5D547; --on-mark:#0B1322; --mark-tint:rgba(245,213,71,.14); --mark-line:#F5D547; --mark-under:transparent;
+  --sello:#FF6B4A;
+  --node:#1A2842; --node-stroke:#AEB6C6; --edge:#7483A0;
+  --f-display:"Cabinet Grotesk",sans-serif; --f-body:"General Sans",sans-serif; --f-mono:"JetBrains Mono",monospace;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+  --r-sm:2px; --r-md:4px; --r-full:999px;
+}
+:root[data-theme="print"][data-theme]{
+  --bg:#FAF8F2; --surface:#FFFFFF; --raised:#F2EFE6; --hairline:#C9C5B8;
+  --text:#16181A; --text-2:#4A4C47; --meta:#5E5F59;
+  --mark:#F6E27F; --on-mark:#16181A; --mark-tint:rgba(246,226,127,.55); --mark-line:#16181A; --mark-under:#F6E27F;
+  --sello:#B3301A;
+  --node:#FFFFFF; --node-stroke:#3B3D3A; --edge:#3B3D3A;
+}
+*{box-sizing:border-box}
+.mono,.kv dd,td.id,td.num,.stamp,a.oficial,.big,[font-family="JetBrains Mono"]{font-variant-ligatures:none;font-feature-settings:"calt" 0,"liga" 0}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1440px;margin:0 auto;padding:0 var(--s4)}
+.d{font-family:var(--f-display);font-weight:800;letter-spacing:-.01em;line-height:1.1}
+.nw{white-space:nowrap}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums slashed-zero}
+.meta{color:var(--meta);font-size:14px}
+.t2{color:var(--text-2)}
+a{color:var(--text);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+a.oficial{color:var(--sello);text-decoration:none;font-family:var(--f-mono);font-size:14px}
+a.oficial:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+hr{border:0;border-top:1px solid var(--hairline);margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{font-family:var(--f-body);font-size:14px;font-weight:600;padding:6px 12px;border-radius:var(--r-md);border:1px solid var(--hairline);background:transparent;color:var(--text);min-height:32px}
+.btn:hover{background:var(--raised)}
+.btn-primary{background:var(--text);color:var(--bg);border-color:var(--text)}
+.btn-primary:hover{background:var(--text-2);border-color:var(--text-2)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:var(--r-full);border:1px solid var(--hairline);color:var(--text-2);white-space:nowrap}
+.chip.revision{border-style:dashed;color:var(--text-2)}
+.stamp{display:inline-block;font-family:var(--f-mono);font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--sello);border:1px solid var(--sello);border-radius:var(--r-sm);padding:1px 6px}
+.lab{font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--meta)}
+
+/* page chrome */
+.top{display:flex;justify-content:space-between;align-items:center;gap:var(--s4);padding:var(--s4) 0;border-bottom:1px solid var(--hairline);flex-wrap:wrap}
+.wordmark{font-size:28px;display:flex;align-items:baseline;gap:10px}
+.wordmark small{font-family:var(--f-body);font-weight:400;font-size:14px;color:var(--meta)}
+.section{padding:var(--s7) 0;border-bottom:1px solid var(--hairline)}
+.section > h2{font-size:28px;margin:0 0 var(--s2)}
+.section > p.lead{margin:0 0 var(--s5);color:var(--text-2);max-width:70ch}
+
+/* home poster */
+.poster{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:var(--s6);align-items:end}
+.poster h1{font-size:48px;margin:0 0 var(--s5);max-width:14ch}
+.search label{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+.search .row{display:flex;gap:var(--s2)}
+.search input{flex:1;min-width:0;font:inherit;font-size:19px;color:var(--text);background:var(--surface);border:1px solid var(--node-stroke);border-radius:var(--r-md);padding:10px 14px}
+.search input::placeholder{color:var(--meta)}
+.examples{margin-top:var(--s2);font-size:14px;color:var(--meta)}
+.examples a{color:var(--text-2)}
+.fuente{font-size:14px;color:var(--text-2);border-top:1px solid var(--hairline);padding-top:var(--s3)}
+
+/* entity page mock */
+.app{border:1px solid var(--hairline);border-radius:var(--r-md);overflow:hidden;background:var(--bg)}
+.ehead{display:flex;flex-wrap:wrap;gap:var(--s3) var(--s5);align-items:center;justify-content:space-between;padding:var(--s4) var(--s5);border-bottom:1px solid var(--hairline);background:var(--surface)}
+.ehead h3{font-size:28px;margin:0}
+.ehead .id{display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;margin-top:4px}
+.ehead .acts{display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap}
+.crumb{display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;padding:var(--s2) var(--s5);border-bottom:1px solid var(--hairline);font-size:14px;color:var(--text-2)}
+.crumb .sep{color:var(--meta)}
+.grid3{display:grid;grid-template-columns:280px minmax(0,1fr) 380px}
+.card{padding:var(--s5);border-right:1px solid var(--hairline)}
+.card .big{font-family:var(--f-mono);font-size:23px;font-variant-numeric:tabular-nums;line-height:1.2}
+.card dl{margin:0;display:grid;gap:var(--s4)}
+.card dt{margin-bottom:2px}
+.card dd{margin:0}
+.card .hit{display:block;background:var(--raised);border:1px solid var(--hairline);border-radius:var(--r-md);padding:var(--s3);text-decoration:none}
+.card .hit strong{display:block;font-size:16px}
+.graphbox{position:relative;min-height:470px;background:var(--bg)}
+.graphbox svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);padding:var(--s3) var(--s4);border-top:1px solid var(--hairline);font-size:12px;color:var(--text-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.drawer{border-left:1px solid var(--hairline);background:var(--surface);display:flex;flex-direction:column}
+.drawer header{padding:var(--s4) var(--s5);border-bottom:1px solid var(--hairline)}
+.drawer h4{font-size:19px;margin:0 0 var(--s2)}
+.drawer .sum{font-size:14px;color:var(--text-2);margin:0}
+.rec{padding:var(--s4) var(--s5);border-bottom:1px dashed var(--hairline)}
+.rec .rh{display:flex;justify-content:space-between;align-items:center;gap:var(--s2);margin-bottom:var(--s2)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px var(--s3);margin:0;font-size:14px}
+.kv dt{font-family:var(--f-mono);color:var(--meta);font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}
+.kv dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.kv dd.txt{font-family:var(--f-body)}
+.kv .total{font-weight:700}
+.rec .links{display:flex;justify-content:space-between;margin-top:var(--s3);gap:var(--s2);flex-wrap:wrap}
+.stub{margin-top:auto;padding:var(--s4) var(--s5);border-top:2px dashed var(--hairline);display:flex;justify-content:space-between;align-items:center;gap:var(--s3);background:var(--raised)}
+.stub p{margin:0;font-size:12px;color:var(--meta);font-family:var(--f-mono)}
+.tablewrap{border-top:1px solid var(--hairline);overflow-x:auto}
+.tablewrap .th{display:flex;justify-content:space-between;align-items:center;padding:var(--s3) var(--s5)}
+.tablewrap h4{font-size:19px;margin:0}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--meta);text-align:left;padding:0 var(--s3) var(--s2);border-bottom:1px solid var(--hairline);white-space:nowrap}
+th.num,td.num{text-align:right}
+td{height:36px;padding:0 var(--s3);border-bottom:1px solid var(--hairline);white-space:nowrap}
+td.id,td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tr.sel td{background:var(--mark-tint)}
+tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--mark)}
+th:first-child,td:first-child{padding-left:var(--s5)}
+
+/* specimen */
+.spec{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s5)}
+.spec > div{border-top:1px solid var(--hairline);padding-top:var(--s3)}
+.spec .sample{margin:var(--s3) 0}
+.scale{display:grid;gap:var(--s2);margin-top:var(--s5)}
+.scale div{display:grid;grid-template-columns:64px 1fr;align-items:baseline;gap:var(--s4);border-bottom:1px solid var(--hairline);padding-bottom:var(--s2);overflow:hidden}
+.scale div > span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--s3)}
+.sw figure{margin:0;border:1px solid var(--hairline);border-radius:var(--r-md);overflow:hidden;background:var(--surface)}
+.sw .c{height:56px}
+.sw figcaption{padding:var(--s2) var(--s3);font-size:12px}
+.sw figcaption b{display:block;font-size:14px}
+.comp{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--s5)}
+.comp > div{border-top:1px solid var(--hairline);padding-top:var(--s3);display:grid;gap:var(--s3);align-content:start}
+.row{display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center}
+.state{border:1px solid var(--hairline);border-radius:var(--r-md);padding:var(--s4);background:var(--surface);font-size:14px}
+.state strong{display:block;font-size:16px;margin-bottom:4px}
+.skel{height:12px;border-radius:var(--r-sm);background:var(--raised);margin:6px 0}
+
+/* mobile */
+.mob-wrap{display:flex;gap:var(--s6);flex-wrap:wrap;align-items:flex-start}
+.phone{width:390px;max-width:100%;border:1px solid var(--hairline);border-radius:12px;overflow:hidden;background:var(--bg);position:relative;height:760px}
+.phone .ph{padding:var(--s3) var(--s4);border-bottom:1px solid var(--hairline);background:var(--surface)}
+.phone .tabs{display:flex;border-bottom:1px solid var(--hairline)}
+.phone .tabs span{flex:1;text-align:center;padding:10px 0;font-weight:600;font-size:14px;color:var(--meta)}
+.phone .tabs span.on{color:var(--text);box-shadow:inset 0 -2px 0 var(--text)}
+.phone .grp{padding:var(--s3) var(--s4) 0}
+.phone .it{display:flex;justify-content:space-between;align-items:center;min-height:44px;border-bottom:1px solid var(--hairline);font-size:14px;gap:var(--s2)}
+.phone .it.sel{background:var(--mark-tint);margin:0 calc(-1 * var(--s4));padding:0 var(--s4);box-shadow:inset 3px 0 0 var(--mark)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--hairline);border-radius:12px 12px 0 0;padding:var(--s3) var(--s4) var(--s4);box-shadow:0 -8px 24px rgba(0,0,0,.35)}
+.sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--hairline);margin:0 auto var(--s3)}
+
+.toggle{position:fixed;right:16px;top:16px;z-index:9;background:var(--surface)}
+.note{font-size:12px;color:var(--meta)}
+@media (max-width:1100px){
+  .grid3{grid-template-columns:1fr}
+  .card{border-right:0;border-bottom:1px solid var(--hairline)}
+  .drawer{border-left:0;border-top:1px solid var(--hairline)}
+  .poster{grid-template-columns:1fr}
+  .spec{grid-template-columns:1fr}
+}
+@media (max-width:600px){ .poster h1{font-size:40px} .ehead h3{font-size:23px} }
+@media (prefers-reduced-motion:no-preference){
+  .sweep{stroke-dasharray:230;stroke-dashoffset:230;animation:sweep .2s ease-out .6s forwards}
+  @keyframes sweep{to{stroke-dashoffset:0}}
+}
+</style>
+</head>
+<body>
+<button class="btn toggle" id="tg" aria-pressed="false">Ver tema de impresión (PNG)</button>
+<div class="wrap">
+
+<header class="top">
+  <div class="wordmark d">Cabos Sueltos <small>Registros públicos, no conclusiones.</small></div>
+  <nav class="row" style="gap:16px;font-size:14px"><a href="#">Metodología</a><a href="#">Fuentes</a><a href="#">Solicitar corrección</a></nav>
+</header>
+
+<!-- 1. HOME -->
+<section class="section" aria-labelledby="h-home">
+  <p class="note" id="h-home" style="margin:0 0 16px">Inicio · búsqueda primero</p>
+  <div class="poster">
+    <div>
+      <h1 class="d">Siga el vínculo hasta el registro.</h1>
+      <form class="search" onsubmit="return false">
+        <label for="q">Buscar por nombre, NIT o cédula</label>
+        <div class="row"><input id="q" placeholder="Ej.: Constructora Andina del Sur, 900.555.123-4"><button class="btn btn-primary" style="font-size:16px;padding:10px 18px">Buscar</button></div>
+      </form>
+      <p class="examples">Pruebe con <a href="#">Instituto Vial Regional</a> · <a href="#">NIT 901.222.310-5</a></p>
+    </div>
+    <p class="fuente">Cada línea del grafo sale de un registro oficial que usted puede abrir y citar. Fuentes: SECOP II y RUES en datos.gov.co, licencia CC BY-SA 4.0. Datos a corte <span class="mono">20-09-2026</span>.</p>
+  </div>
+</section>
+
+<!-- 2. ENTITY PAGE -->
+<section class="section" aria-labelledby="h-ent">
+  <h2 class="d" id="h-ent">Página de entidad</h2>
+  <p class="lead">Tarjeta 280 px · grafo flexible · recibo 380 px · tabla Conexiones debajo. El único color en pantalla: amarillo = lo que usted seleccionó; bermellón = lo que dice un registro oficial.</p>
+  <div class="app">
+    <div class="ehead">
+      <div>
+        <h3 class="d">Constructora Andina del Sur S.A.S.</h3>
+        <div class="id"><span class="mono t2">NIT 900.555.123-4</span><span class="chip">Activa · RUES, corte 01-09-2026</span></div>
+      </div>
+      <div class="acts"><button class="btn">Copiar enlace</button><button class="btn">Descargar PNG</button><a href="#" style="font-size:14px">Solicitar corrección</a></div>
+    </div>
+    <div class="crumb"><span>Constructora Andina del Sur</span><span class="sep">›</span><span style="color:var(--text)">María P. Ortega</span><span style="flex:1"></span><button class="btn">Deshacer</button><button class="btn">Volver al foco</button></div>
+    <div class="grid3">
+      <aside class="card">
+        <dl>
+          <div><dt class="lab">Contratos en SECOP II</dt><dd class="big">31</dd></div>
+          <div><dt class="lab">Valor total</dt><dd class="big">COP 84.200 <span style="font-size:16px">millones</span></dd></div>
+          <div><a class="hit" href="#"><strong>Comparte representante legal con 3 empresas</strong><span class="meta">Ver en Conexiones</span></a></div>
+          <div><dt class="lab">Rep. legal reportado en SECOP</dt><dd>María P. Ortega <span class="mono t2 nw">C.C. ***7730</span></dd></div>
+          <div><span class="chip revision">1 vínculo en revisión</span></div>
+        </dl>
+      </aside>
+      <div class="graphbox">
+        <svg viewBox="0 0 760 470" role="img" aria-label="Grafo de relaciones de Constructora Andina del Sur. La tabla Conexiones contiene la misma información.">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--node-stroke)"/></marker>
+            <marker id="arm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--mark-line)"/></marker>
+          </defs>
+          <g font-family="General Sans" font-size="12" fill="var(--text-2)" class="gl">
+          <line x1="380" y1="200" x2="150" y2="74" stroke="var(--edge)" stroke-width="1.25"/>
+          <line x1="380" y1="200" x2="380" y2="74" stroke="var(--edge)" stroke-width="1.25"/>
+          <line x1="380" y1="200" x2="610" y2="74" stroke="var(--edge)" stroke-width="1.25"/>
+          <line x1="150" y1="74" x2="60" y2="168" stroke="var(--edge)" stroke-width="1.5" stroke-dasharray="1 5" stroke-linecap="round"/>
+          <path d="M366 334 Q346 272 370 224" fill="none" stroke="var(--node-stroke)" stroke-width="3" marker-end="url(#ar)"/>
+          <path d="M394 334 Q414 272 390 224" fill="none" stroke="var(--node-stroke)" stroke-width="1.5" stroke-dasharray="10 6" marker-end="url(#ar)"/>
+          <line x1="380" y1="350" x2="612" y2="258" stroke="var(--node-stroke)" stroke-width="3" marker-end="url(#ar)"/>
+          <line x1="380" y1="350" x2="166" y2="380" stroke="var(--node-stroke)" stroke-width="3" marker-end="url(#ar)"/>
+          <line x1="380" y1="350" x2="598" y2="406" stroke="var(--mark-under)" stroke-width="12" stroke-linecap="round"/>
+          <line x1="380" y1="350" x2="598" y2="406" stroke="var(--mark-line)" stroke-width="3.5" marker-end="url(#arm)"/>
+          <line class="sweep" x1="380" y1="350" x2="598" y2="406" stroke="var(--mark-line)" stroke-width="3.5"/>
+          <g stroke="var(--bg)" stroke-width="5" paint-order="stroke" stroke-linejoin="round">
+            <text x="258" y="140" text-anchor="middle">12 contratos · COP 32.000 M</text>
+            <text x="380" y="140" text-anchor="middle">11 contratos</text>
+            <text x="500" y="140" text-anchor="middle">8 contratos</text>
+            <text x="112" y="116" text-anchor="middle">ordenador del gasto</text>
+            <text x="352" y="282" text-anchor="end">rep. reportado en SECOP</text>
+            <text x="408" y="282">rep. vigente a 01-09-2026 (RUES)</text>
+            <text x="492" y="402" text-anchor="middle" fill="var(--text)" transform="rotate(14.4 492 402)">rep. reportado en SECOP</text>
+          </g>
+          <g stroke="var(--node-stroke)" stroke-width="1.5" fill="var(--node)">
+            <rect x="136" y="60" width="28" height="28"/><rect x="366" y="60" width="28" height="28"/><rect x="596" y="60" width="28" height="28"/>
+            <circle cx="380" cy="200" r="22" stroke-width="2"/>
+            <circle cx="626" cy="252" r="14"/><circle cx="152" cy="382" r="14"/>
+            <rect x="48" y="156" width="24" height="24" rx="3" transform="rotate(45 60 168)"/>
+            <rect x="366" y="336" width="28" height="28" rx="3" transform="rotate(45 380 350)"/>
+            <circle cx="614" cy="410" r="14"/>
+          </g>
+          <circle cx="614" cy="410" r="19" fill="none" stroke="var(--mark-line)" stroke-width="2"/>
+          <rect x="360" y="330" width="40" height="40" rx="4" transform="rotate(45 380 350)" fill="none" stroke="var(--mark-line)" stroke-width="2"/>
+          <rect x="640" y="150" width="112" height="26" rx="13" fill="var(--node)" stroke="var(--node-stroke)" stroke-dasharray="3 3"/>
+          <text x="696" y="167" text-anchor="middle">+2 entidades · tabla</text>
+          <g fill="var(--text)" font-size="13">
+            <text x="150" y="50" text-anchor="middle">Alcaldía de San Rafael</text>
+            <text x="380" y="50" text-anchor="middle">Gobernación del Alto Valle</text>
+            <text x="610" y="50" text-anchor="middle">Instituto Vial Regional</text>
+            <text x="410" y="198" font-weight="700">Constructora Andina del Sur</text>
+            <text x="626" y="214" text-anchor="middle">Vías del Río S.A.S.</text>
+            <text x="152" y="414" text-anchor="middle">Consorcio Puente Nuevo</text>
+            <text x="614" y="446" text-anchor="middle" font-weight="700">Obras Llanas S.A.S.</text>
+            <text x="380" y="392" text-anchor="middle">María P. Ortega</text>
+            <text x="60" y="204" text-anchor="middle">Ordenador del gasto</text>
+          </g>
+          <g font-family="JetBrains Mono" font-size="11" fill="var(--meta)">
+            <text x="410" y="214">NIT 900.555.123-4</text>
+            <text x="626" y="228" text-anchor="middle">NIT 901.448.019-2</text>
+            <text x="152" y="428" text-anchor="middle">NIT 901.603.777-1</text>
+            <text x="614" y="460" text-anchor="middle">NIT 901.222.310-5</text>
+            <text x="380" y="406" text-anchor="middle">C.C. ***7730</text>
+            <text x="60" y="218" text-anchor="middle">C.C. ***2210</text>
+          </g>
+          </g>
+        </svg>
+        <div class="legend">
+          <span><svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" stroke="var(--edge)" stroke-width="1.25"/></svg>contrato</span>
+          <span><svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" stroke="var(--node-stroke)" stroke-width="3"/></svg>rep. reportado en SECOP</span>
+          <span><svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" stroke="var(--node-stroke)" stroke-width="1.5" stroke-dasharray="8 4"/></svg>rep. vigente (RUES)</span>
+          <span><svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" stroke="var(--edge)" stroke-width="1.5" stroke-dasharray="1 4" stroke-linecap="round"/></svg>ordenador / supervisor</span>
+          <span>■ entidad pública</span><span>● empresa</span><span>◆ persona</span>
+        </div>
+      </div>
+      <aside class="drawer" aria-label="Evidencia del vínculo">
+        <header>
+          <h4 class="d">Evidencia del vínculo</h4>
+          <p class="sum">Ambas empresas tienen a María P. Ortega (<span class="mono">C.C. ***7730</span>) como representante legal reportado en SECOP. Las fechas en que ejerció el cargo no constan en estos registros.</p>
+        </header>
+        <div class="rec">
+          <div class="rh"><span class="lab">Registro 1 de 2</span><span class="stamp">SECOP II</span></div>
+          <dl class="kv">
+            <dt>Contrato</dt><dd>CO1.PCCNTR.4471290</dd>
+            <dt>Rep. legal</dt><dd class="txt">María P. Ortega <span class="mono nw">C.C. ***7730</span></dd>
+            <dt>Objeto</dt><dd class="txt">Mantenimiento de vías terciarias</dd>
+            <dt>Entidad</dt><dd class="txt">Alcaldía de San Rafael</dd>
+            <dt>Firmado</dt><dd>14-03-2022</dd>
+            <dt>Observado</dt><dd>20-09-2026</dd>
+            <dt>Valor</dt><dd class="total">COP 1.240 millones</dd>
+          </dl>
+          <div class="links"><a class="oficial" href="#">Ver registro oficial ↗</a><button class="btn">Copiar cita</button></div>
+        </div>
+        <div class="rec">
+          <div class="rh"><span class="lab">Registro 2 de 2</span><span class="stamp">SECOP II</span></div>
+          <dl class="kv">
+            <dt>Contrato</dt><dd>CO1.PCCNTR.5102847</dd>
+            <dt>Rep. legal</dt><dd class="txt">María P. Ortega <span class="mono nw">C.C. ***7730</span></dd>
+            <dt>Objeto</dt><dd class="txt">Construcción de placa huella vereda El Retiro</dd>
+            <dt>Firmado</dt><dd class="t2">fecha no reportada</dd>
+            <dt>Valor</dt><dd class="total">COP 612 millones</dd>
+          </dl>
+          <div class="links"><a class="oficial" href="#">Ver registro oficial ↗</a><button class="btn">Copiar cita</button></div>
+        </div>
+        <div class="stub">
+          <p>SECOP II, datos.gov.co<br>CC BY-SA 4.0 · corte 20-09-2026</p>
+          <button class="btn">Copiar cita</button>
+        </div>
+      </aside>
+    </div>
+    <div class="tablewrap">
+      <div class="th"><h4 class="d">Conexiones</h4><span class="meta">Mostrando 9 de 9 · ordenado por tipo</span></div>
+      <table>
+        <thead><tr><th>Tipo de vínculo</th><th>Entidad</th><th>Identificador</th><th class="num">Contratos</th><th class="num">Valor (COP)</th><th>Fuente</th></tr></thead>
+        <tbody>
+          <tr><td>contrato</td><td>Alcaldía de San Rafael</td><td class="id">NIT 890.980.112-1</td><td class="num">12</td><td class="num">32.000 M</td><td><span class="stamp">SECOP II</span></td></tr>
+          <tr><td>contrato</td><td>Gobernación del Alto Valle</td><td class="id">NIT 800.103.935-6</td><td class="num">11</td><td class="num">37.400 M</td><td><span class="stamp">SECOP II</span></td></tr>
+          <tr><td>contrato</td><td>Instituto Vial Regional</td><td class="id">NIT 899.999.284-4</td><td class="num">8</td><td class="num">14.800 M</td><td><span class="stamp">SECOP II</span></td></tr>
+          <tr><td>rep. reportado en SECOP</td><td>María P. Ortega</td><td class="id">C.C. ***7730</td><td class="num">31</td><td class="num">—</td><td><span class="stamp">SECOP II</span></td></tr>
+          <tr><td>rep. vigente (RUES)</td><td>María P. Ortega</td><td class="id">C.C. ***7730</td><td class="num">—</td><td class="num">—</td><td><span class="stamp">RUES</span></td></tr>
+          <tr class="sel" aria-selected="true"><td>comparte representante</td><td><strong>Obras Llanas S.A.S.</strong></td><td class="id">NIT 901.222.310-5</td><td class="num">2</td><td class="num">1.852 M</td><td><span class="stamp">SECOP II</span></td></tr>
+          <tr><td>comparte representante</td><td>Vías del Río S.A.S.</td><td class="id">NIT 901.448.019-2</td><td class="num">5</td><td class="num">4.105 M</td><td><span class="stamp">SECOP II</span></td></tr>
+          <tr><td>comparte representante</td><td>Consorcio Puente Nuevo</td><td class="id">NIT 901.603.777-1</td><td class="num">1</td><td class="num">9.930 M</td><td><span class="stamp">SECOP II</span></td></tr>
+          <tr><td>ordenador del gasto</td><td>Alcaldía de San Rafael (lado entidad)</td><td class="id">C.C. ***2210</td><td class="num">12</td><td class="num">—</td><td><span class="stamp">SECOP II</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 3. MOBILE -->
+<section class="section" aria-labelledby="h-mob">
+  <h2 class="d" id="h-mob">Móvil · conexiones primero</h2>
+  <p class="lead">Filas de 44 px, grupos por tipo, recibo como hoja inferior. El grafo es la segunda pestaña.</p>
+  <div class="mob-wrap">
+    <div class="phone">
+      <div class="ph">
+        <div class="d" style="font-size:19px">Constructora Andina del Sur S.A.S.</div>
+        <div class="row" style="margin-top:4px"><span class="mono t2" style="font-size:14px">NIT 900.555.123-4</span><span class="chip">Activa · RUES</span></div>
+        <div class="row" style="margin-top:8px"><button class="btn">Copiar enlace</button><button class="btn">PNG</button><a href="#" style="font-size:14px">Solicitar corrección</a></div>
+      </div>
+      <div class="tabs"><span class="on">Conexiones</span><span>Grafo</span></div>
+      <div class="grp"><div class="lab">Comparte representante (3)</div>
+        <div class="it sel"><span><strong>Obras Llanas S.A.S.</strong><br><span class="mono meta" style="font-size:12px">NIT 901.222.310-5</span></span><span class="stamp">SECOP II</span></div>
+        <div class="it"><span>Vías del Río S.A.S.<br><span class="mono meta" style="font-size:12px">NIT 901.448.019-2</span></span><span class="stamp">SECOP II</span></div>
+      </div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="d" style="font-size:19px;margin-bottom:6px">Evidencia del vínculo</div>
+        <p style="margin:0 0 10px;font-size:14px" class="t2">Ambas empresas tienen a María P. Ortega (<span class="mono">C.C. ***7730</span>) como representante legal reportado en SECOP.</p>
+        <dl class="kv" style="border-top:1px dashed var(--hairline);padding-top:10px">
+          <dt>Contrato</dt><dd>CO1.PCCNTR.4471290</dd><dt>Valor</dt><dd class="total">COP 1.240 millones</dd><dt>Firmado</dt><dd>14-03-2022</dd>
+        </dl>
+        <div class="links row" style="justify-content:space-between;margin-top:12px"><a class="oficial" href="#">Ver registro oficial ↗</a><button class="btn">Copiar cita</button></div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:260px;max-width:520px">
+      <h3 class="d" style="font-size:23px;margin:0 0 8px">Exportación PNG (tema de impresión)</h3>
+      <p class="t2" style="font-size:14px;margin:0 0 12px">Pulse el botón inferior derecho para ver toda la página con los tokens de impresión: papel, tinta, bermellón oscuro y la selección como trazo de resaltador bajo la etiqueta.</p>
+      <div class="state" style="background:#FAF8F2;color:#16181A;border-color:#C9C5B8">
+        <strong style="font-family:var(--f-display);font-weight:800;font-size:19px">Constructora Andina del Sur S.A.S. <span class="mono" style="font-weight:400;font-size:14px;color:#4A4C47">NIT 900.555.123-4</span></strong>
+        <span>Vínculo seleccionado: <span style="background:linear-gradient(transparent 55%,#F6E27F 55%);padding:0 2px">rep. reportado en SECOP → Obras Llanas S.A.S.</span></span>
+        <p class="mono" style="font-size:12px;color:#5E5F59;margin:12px 0 0;border-top:1px solid #C9C5B8;padding-top:8px">Fuente: SECOP II / RUES · datos.gov.co · CC BY-SA 4.0 · cabosueltos.co/e/900555123 · 25-09-2026</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. TYPE -->
+<section class="section" aria-labelledby="h-type">
+  <h2 class="d" id="h-type">Tipografía</h2>
+  <p class="lead">Tres roles, tres familias: Cabinet Grotesk y General Sans (Fontshare), JetBrains Mono (Google Fonts, OFL). Cifras tabulares y cero con barra en todo identificador.</p>
+  <div class="spec">
+    <div><span class="lab">Títulos y etiquetas · Cabinet Grotesk 700–800</span>
+      <p class="sample d" style="font-size:40px">Unión Temporal Infraestructura Vial del Magdalena Medio 2024</p>
+      <p class="meta">Grotesca de afiche: directa, pesada, se lee a distancia y en capturas de pantalla.</p></div>
+    <div><span class="lab">Texto e interfaz · General Sans 400–600</span>
+      <p class="sample" style="font-size:19px">Ambas empresas tienen a la misma persona como representante legal reportado en SECOP. Las fechas en que ejerció el cargo no constan en estos registros.</p>
+      <p class="meta">Neutra y abierta; deja que los títulos y los datos lleven la voz.</p></div>
+    <div><span class="lab">Datos · JetBrains Mono</span>
+      <p class="sample mono" style="font-size:19px;line-height:1.6">NIT 900.555.123-4<br>C.C. ***7730<br>CO1.PCCNTR.4471290<br>COP 84.200 millones<br>14-03-2022</p>
+      <p class="meta">Cero con punto, 1/l/I distintos, cifras tabulares. Todo lo que se copia, se compara o se cita.</p></div>
+  </div>
+  <div class="scale">
+    <div><span class="mono meta">48</span><span class="d" style="font-size:48px">Siga el vínculo</span></div>
+    <div><span class="mono meta">40</span><span class="d" style="font-size:40px">Constructora Andina del Sur</span></div>
+    <div><span class="mono meta">28</span><span class="d" style="font-size:28px">Página de entidad · nombre</span></div>
+    <div><span class="mono meta">23</span><span class="d" style="font-size:23px">Sección · cifras clave</span></div>
+    <div><span class="mono meta">19</span><span style="font-size:19px">Títulos de panel, resumen de evidencia</span></div>
+    <div><span class="mono meta">16</span><span style="font-size:16px">Texto base de interfaz y lectura</span></div>
+    <div><span class="mono meta">14</span><span style="font-size:14px">Tablas, controles, metadatos</span></div>
+    <div><span class="mono meta">12</span><span style="font-size:12px">Etiquetas de aristas, sellos, leyenda (mínimo)</span></div>
+  </div>
+</section>
+
+<!-- 5. COLOR -->
+<section class="section" aria-labelledby="h-col">
+  <h2 class="d" id="h-col">Color · cada tono significa una sola cosa</h2>
+  <p class="lead">El color no codifica categorías (de eso se encargan la forma y el trazo). Amarillo: lo que usted está mirando. Bermellón: lo que dice un registro oficial. El azul es solo la tinta del papel carbón: nunca enlaces ni categorías.</p>
+  <div class="sw" id="sw"></div>
+</section>
+
+<!-- 6. COMPONENTS -->
+<section class="section" aria-labelledby="h-comp">
+  <h2 class="d" id="h-comp">Componentes y estados</h2>
+  <div class="comp">
+    <div><span class="lab">Botones</span>
+      <div class="row"><button class="btn btn-primary">Buscar</button><button class="btn">Copiar enlace</button><button class="btn" disabled style="opacity:.5;cursor:not-allowed">Descargar PNG</button></div>
+      <div class="row"><button class="btn" style="outline:2px solid var(--mark);outline-offset:2px">Foco visible</button><a href="#">Enlace interno</a><a class="oficial" href="#">Ver registro oficial ↗</a></div></div>
+    <div><span class="lab">Chips y sellos</span>
+      <div class="row"><span class="chip">Activa · RUES, corte 01-09-2026</span><span class="chip">Cancelada · RUES</span></div>
+      <div class="row"><span class="chip revision">vínculo en revisión</span><span class="stamp">SECOP II</span><span class="stamp">RUES</span><span class="stamp">CC BY-SA 4.0</span></div></div>
+    <div><span class="lab">Vacío</span>
+      <div class="state"><strong>Sin resultados para «Ingeniería Montevrde»</strong>Revise la ortografía o busque por NIT. Solo buscamos en SECOP II y RUES.</div></div>
+    <div><span class="lab">Error (sin tono: ícono + texto)</span>
+      <div class="state" role="alert"><strong>⚠ No pudimos cargar las conexiones</strong>El servidor no respondió. <a href="#">Reintentar</a></div></div>
+    <div><span class="lab">Cargando</span>
+      <div class="state" aria-busy="true"><div class="skel" style="width:60%"></div><div class="skel" style="width:85%"></div><div class="skel" style="width:40%"></div></div></div>
+    <div><span class="lab">Parcial</span>
+      <div class="state"><strong>Mostrando 50 de 214 contratos</strong>Ordenados por valor. <a href="#">Cargar 50 más</a></div></div>
+  </div>
+</section>
+
+<footer style="padding:24px 0 80px" class="meta">Fuentes: SECOP II y RUES (datos.gov.co), CC BY-SA 4.0 · Registros públicos, no conclusiones. · Datos de ejemplo ficticios.</footer>
+</div>
+<script>
+const tokens=[
+ ["bg","--bg","Fondo azul carbón"],["surface","--surface","Superficie"],["raised","--raised","Elevado / cajón"],["hairline","--hairline","Filete"],
+ ["text","--text","Texto (papel)"],["text-2","--text-2","Texto secundario"],["meta","--meta","Metadatos"],
+ ["mark","--mark","Resaltador: su selección"],["sello","--sello","Sello: registro oficial"],["node","--node","Nodo"],["edge","--edge","Arista contrato"]];
+function lum(h){h=h.trim().replace('#','');const c=[0,2,4].map(i=>parseInt(h.substr(i,2),16)/255).map(v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4));return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+function cr(a,b){const x=lum(a),y=lum(b);return ((Math.max(x,y)+.05)/(Math.min(x,y)+.05)).toFixed(1)}
+function draw(){const cs=getComputedStyle(document.documentElement);const sf=cs.getPropertyValue('--surface').trim();
+ document.getElementById('sw').innerHTML=tokens.map(([n,v,l])=>{const hex=cs.getPropertyValue(v).trim();return `<figure><div class="c" style="background:${hex}"></div><figcaption><b>${l}</b><span class="mono">${n} ${hex}</span><br><span class="meta">${cr(hex,sf)}:1 sobre superficie</span></figcaption></figure>`}).join('')}
+draw();
+const tg=document.getElementById('tg');tg.onclick=()=>{const r=document.documentElement;const p=r.dataset.theme==='print';if(p){delete r.dataset.theme}else{r.dataset.theme='print'}tg.textContent=p?'Ver tema de impresión (PNG)':'Ver tema de la app (oscuro)';tg.setAttribute('aria-pressed',String(!p));draw()};
+</script>
+</body>
+</html>
