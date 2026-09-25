@@ -4,6 +4,7 @@ Branch: master
 Repo: local-only
 
 Scope: M1 (SECOP II + RUES explorer). Stack approved: pytest + real Postgres 16 (pg_trgm) + Hypothesis; Vitest + Testing Library; Playwright E2E in CI seeded with the golden-case fixture.
+> **Superseded:** the Postgres 16 line above is superseded by R23 (`docs/designs/follow-the-money.md`) — Postgres 17, to match Supabase-hosted staging/production.
 
 ## Affected Pages/Routes
 - `/` search: name, NIT (any formatting), full cédula; results show masked natural-person IDs; per-IP rate limit returns a clear message.
