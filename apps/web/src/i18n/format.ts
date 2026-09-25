@@ -10,10 +10,19 @@ function validateAmount(value: number): void {
   }
 }
 
+const integerFormatterCache = new Map<string, Intl.NumberFormat>();
+
+function integerFormatter(locale: string): Intl.NumberFormat {
+  let formatter = integerFormatterCache.get(locale);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+    integerFormatterCache.set(locale, formatter);
+  }
+  return formatter;
+}
+
 function formatEsCoInteger(locale: string, value: number): string {
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(
-    value,
-  );
+  return integerFormatter(locale).format(value);
 }
 
 /**
@@ -48,8 +57,21 @@ export function formatMillonesCOP(value: number, locale = "es-CO"): string {
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
+function isLeapYear(year: number): boolean {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+}
+
+const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
 function daysInMonth(year: number, month: number): number {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+  // Not `new Date(Date.UTC(year, month, 0))`: `Date.UTC`/`Date` treat a
+  // literal year of 0-99 as 1900-1999 (the legacy two-digit-year special
+  // case), which would compute leap-year-ness for e.g. "0004" against the
+  // wrong century. Compute it directly instead.
+  if (month === 2 && isLeapYear(year)) {
+    return 29;
+  }
+  return DAYS_IN_MONTH[month - 1];
 }
 
 /**

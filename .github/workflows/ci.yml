@@ -7,7 +7,13 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # PR runs dedupe by PR number (superseding an old run is safe — nothing
+  # there talks to staging). Push-to-main runs get a unique group per run_id
+  # so this workflow-level cancellation can never kill an in-flight
+  # migrate-staging/supabase-probe run out from under the per-job
+  # `migrate-staging` concurrency group below; that group is main's own
+  # non-cancelling guard against a second push queuing behind a running one.
+  group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -89,11 +95,13 @@ jobs:
     needs: backend
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment: staging
     concurrency:
       group: migrate-staging
       cancel-in-progress: false
     env:
+      APP_ENV: staging
       DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
@@ -110,6 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     env:
+      APP_ENV: staging
       DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
       SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
       SUPABASE_PUBLISHABLE_KEY: ${{ secrets.STAGING_SUPABASE_PUBLISHABLE_KEY }}

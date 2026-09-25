@@ -9,11 +9,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
+# Relative to the process cwd, which is always `backend/` for the CLI, API and tests.
+DEFAULT_ENV_FILE = "../.env"
+
 AppEnv = Literal["local", "ci", "staging", "production"]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file="../.env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=DEFAULT_ENV_FILE, env_file_encoding="utf-8", extra="ignore"
+    )
 
     app_env: AppEnv
     database_url: str
@@ -33,7 +38,7 @@ class Settings(BaseSettings):
         return BACKEND_DIR / ".." / "apps" / "web" / "dist"
 
 
-def load_settings(_env_file: str | Path | None = "../.env") -> Settings:
+def load_settings(_env_file: str | Path | None = DEFAULT_ENV_FILE) -> Settings:
     """Load settings from the environment, exiting with a clear message on failure.
 
     `_env_file` is overridable so tests can bypass the repo-root `.env` file.

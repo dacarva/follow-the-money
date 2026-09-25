@@ -86,6 +86,10 @@ describe("formatMillonesCOP", () => {
     expect(() => formatMillonesCOP(Number.NaN)).toThrow();
   });
 
+  it("throws on non-finite input", () => {
+    expect(() => formatMillonesCOP(Number.POSITIVE_INFINITY)).toThrow();
+  });
+
   it("never abbreviates as a standalone M", () => {
     expect(formatMillonesCOP(32_000_000_000)).not.toMatch(/\bM\b/);
   });
@@ -102,6 +106,22 @@ describe("formatFecha", () => {
 
   it("throws on an impossible calendar date", () => {
     expect(() => formatFecha("2024-02-30")).toThrow();
+  });
+
+  it("throws on a month below 1", () => {
+    expect(() => formatFecha("2024-00-01")).toThrow();
+  });
+
+  it("throws on a month above 12", () => {
+    expect(() => formatFecha("2024-13-01")).toThrow();
+  });
+
+  it("accepts February 29 in a leap year", () => {
+    expect(formatFecha("2024-02-29")).toBe("29-02-2024");
+  });
+
+  it("throws on February 29 in a non-leap year", () => {
+    expect(() => formatFecha("2023-02-29")).toThrow();
   });
 
   it("throws on garbage input", () => {

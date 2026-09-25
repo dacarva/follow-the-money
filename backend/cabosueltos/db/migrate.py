@@ -10,6 +10,13 @@ import psycopg
 MIGRATIONS_DIR = Path(__file__).resolve().parent.parent.parent / "migrations"
 ADVISORY_LOCK_KEY = "cabosueltos.migrate"
 
+# If a prior `migrate` run is killed uncleanly (CI cancel, OOM, network
+# partition) after acquiring the advisory lock but before the connection is
+# torn down, Postgres won't notice the dead session until TCP keepalives
+# time out — which can be hours. Bound how long we'll wait for the lock so a
+# wedged run fails loudly instead of hanging every future `migrate` call.
+LOCK_TIMEOUT = "30s"
+
 _FILENAME_RE = re.compile(r"^(\d+)_[a-z0-9_]+\.sql$")
 
 
@@ -26,16 +33,49 @@ class ChecksumMismatchError(Exception):
         super().__init__(f"migration {version} has changed since it was applied")
 
 
+class InvalidMigrationFilenameError(Exception):
+    def __init__(self, name: str) -> None:
+        self.name = name
+        super().__init__(
+            f"migration file {name!r} does not match the required "
+            f"'<digits>_<name>.sql' pattern; rename it or it will never be applied"
+        )
+
+
+class DuplicateMigrationVersionError(Exception):
+    def __init__(self, version: str, names: list[str]) -> None:
+        self.version = version
+        self.names = names
+        super().__init__(f"migration version {version} is used by more than one file: {names}")
+
+
+class MigrationsDirectoryMissingError(Exception):
+    def __init__(self, directory: Path) -> None:
+        self.directory = directory
+        super().__init__(
+            f"migrations directory {directory} does not exist. If this is running from an "
+            f"installed package (not a source checkout), the migrations/ directory next to "
+            f"backend/ was not shipped with it — `migrate` would otherwise silently apply "
+            f"nothing and report success."
+        )
+
+
 def discover_migrations(directory: Path = MIGRATIONS_DIR) -> list[Migration]:
+    if not directory.is_dir():
+        raise MigrationsDirectoryMissingError(directory)
     migrations = []
+    seen: dict[str, str] = {}
     for path in directory.glob("*.sql"):
         match = _FILENAME_RE.match(path.name)
         if not match:
-            continue
+            raise InvalidMigrationFilenameError(path.name)
         version = match.group(1)
+        if version in seen:
+            raise DuplicateMigrationVersionError(version, [seen[version], path.name])
+        seen[version] = path.name
         checksum = hashlib.sha256(path.read_bytes()).hexdigest()
         migrations.append(Migration(version=version, path=path, checksum=checksum))
-    migrations.sort(key=lambda m: m.version)
+    migrations.sort(key=lambda m: int(m.version))
     return migrations
 
 
@@ -67,7 +107,9 @@ def migrate(database_url: str, directory: Path = MIGRATIONS_DIR) -> list[str]:
     """
     migrations = discover_migrations(directory)
     applied_now: list[str] = []
-    with psycopg.connect(database_url, autocommit=True) as conn:
+    with psycopg.connect(
+        database_url, autocommit=True, options=f"-c lock_timeout={LOCK_TIMEOUT}"
+    ) as conn:
         conn.execute("SELECT pg_advisory_lock(hashtext(%s))", (ADVISORY_LOCK_KEY,))
         try:
             _bootstrap(conn)

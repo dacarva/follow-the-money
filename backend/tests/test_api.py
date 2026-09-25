@@ -54,3 +54,37 @@ def test_root_returns_404_and_app_still_starts_when_dist_missing(
     with TestClient(app) as client:
         response = client.get("/")
     assert response.status_code == 404
+
+
+def test_unknown_api_path_returns_404_instead_of_spa_fallback(
+    database_url: str, tmp_path: Path
+) -> None:
+    (tmp_path / "index.html").write_text("<h1>hola</h1>")
+    app = create_app(_settings(database_url, tmp_path))
+    with TestClient(app) as client:
+        response = client.get("/api/no-such-route")
+    assert response.status_code == 404
+    assert "hola" not in response.text
+
+
+def test_assets_are_served_from_the_dist_assets_directory(
+    database_url: str, tmp_path: Path
+) -> None:
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "assets" / "app.js").write_text("console.log('hola');")
+    app = create_app(_settings(database_url, tmp_path))
+    with TestClient(app) as client:
+        response = client.get("/assets/app.js")
+    assert response.status_code == 200
+    assert "hola" in response.text
+
+
+def test_assets_request_returns_404_when_assets_directory_missing(
+    database_url: str, tmp_path: Path
+) -> None:
+    # `check_dir=False` lets the app boot without a built `dist/assets`;
+    # a request against a missing assets dir should 404, not 500.
+    app = create_app(_settings(database_url, tmp_path))
+    with TestClient(app) as client:
+        response = client.get("/assets/app.js")
+    assert response.status_code == 404

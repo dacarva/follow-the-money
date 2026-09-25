@@ -41,7 +41,7 @@ def test_p4_scratch_table_by_migration_role_gets_no_grants(
     assert current_user == expected_user
 
     with psycopg.connect(database_url) as conn:
-        conn.execute("CREATE TABLE ftm.__priv_scratch (id int)")
+        conn.execute("CREATE TABLE IF NOT EXISTS ftm.__priv_scratch (id int)")
         count = conn.execute(
             """
             SELECT count(*) FROM information_schema.role_table_grants

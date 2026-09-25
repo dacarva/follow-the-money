@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -8,7 +10,7 @@ from fastapi import FastAPI, Response
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from cabosueltos.db.pool import create_pool
+from cabosueltos.db.pool import CONNECT_TIMEOUT_SECONDS, create_pool
 from cabosueltos.settings import Settings, load_settings
 
 
@@ -20,7 +22,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         yield
-        pool.close()
+        await asyncio.to_thread(pool.close)
 
     app = FastAPI(lifespan=lifespan)
     app.state.settings = settings
@@ -29,15 +31,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/salud")
     def salud() -> JSONResponse:
         try:
-            with pool.connection(timeout=1) as conn:
+            with pool.connection(timeout=CONNECT_TIMEOUT_SECONDS) as conn:
                 conn.execute("SELECT 1")
         except Exception:
             return JSONResponse({"estado": "degradado", "db": "error"}, status_code=503)
         return JSONResponse({"estado": "ok", "db": "ok"})
 
+    assets_dir = dist_dir / "assets"
+    # `check_dir=False` only skips Starlette's *constructor*-time check; without
+    # the directory actually existing, StaticFiles still raises at request time
+    # instead of 404ing. Try to create it so a missing/unbuilt dist degrades to
+    # 404s, the same way the SPA fallback route already does for `index.html`.
+    # Best-effort: on a read-only deployment (no local dist build available)
+    # this can fail — don't crash app startup over it, just keep the
+    # pre-existing (request-time) failure mode for that one deployment shape.
+    with contextlib.suppress(OSError):
+        assets_dir.mkdir(parents=True, exist_ok=True)
     app.mount(
         "/assets",
-        StaticFiles(directory=dist_dir / "assets", check_dir=False),
+        StaticFiles(directory=assets_dir, check_dir=False),
         name="assets",
     )
 

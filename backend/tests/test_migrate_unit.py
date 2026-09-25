@@ -4,10 +4,16 @@ import hashlib
 import tempfile
 from pathlib import Path
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from cabosueltos.db.migrate import discover_migrations
+from cabosueltos.db.migrate import (
+    DuplicateMigrationVersionError,
+    InvalidMigrationFilenameError,
+    MigrationsDirectoryMissingError,
+    discover_migrations,
+)
 
 
 @given(
@@ -41,3 +47,33 @@ def test_discover_migrations_ignores_non_matching_files(tmp_path: Path) -> None:
     migrations = discover_migrations(tmp_path)
 
     assert [m.version for m in migrations] == ["0001"]
+
+
+def test_discover_migrations_orders_numerically_across_digit_widths(tmp_path: Path) -> None:
+    # A lexical sort would put "10_x.sql" before "2_x.sql" ("1" < "2").
+    (tmp_path / "2_change.sql").write_text("SELECT 1;")
+    (tmp_path / "10_change.sql").write_text("SELECT 1;")
+
+    migrations = discover_migrations(tmp_path)
+
+    assert [m.version for m in migrations] == ["2", "10"]
+
+
+def test_discover_migrations_rejects_sql_file_with_bad_name(tmp_path: Path) -> None:
+    (tmp_path / "0002-add-column.sql").write_text("SELECT 1;")
+
+    with pytest.raises(InvalidMigrationFilenameError):
+        discover_migrations(tmp_path)
+
+
+def test_discover_migrations_rejects_duplicate_version(tmp_path: Path) -> None:
+    (tmp_path / "0001_first.sql").write_text("SELECT 1;")
+    (tmp_path / "0001_second.sql").write_text("SELECT 2;")
+
+    with pytest.raises(DuplicateMigrationVersionError):
+        discover_migrations(tmp_path)
+
+
+def test_discover_migrations_raises_when_directory_missing(tmp_path: Path) -> None:
+    with pytest.raises(MigrationsDirectoryMissingError):
+        discover_migrations(tmp_path / "does-not-exist")
